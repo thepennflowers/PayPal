@@ -1,0 +1,13 @@
+# Declarative webhook subscriptions. `url` must be a publicly reachable
+# HTTPS endpoint (e.g. your deployed app's /api/paypal/webhooks route)
+# before you run `npm run paypal:apply` against PRODUCTION.
+webhooks:
+  - id: WEBHOOK-ORDERS-INVOICES
+    url: https://thepennflowers.example.com/api/paypal/webhooks
+    event_types:
+      - CHECKOUT.ORDER.APPROVED
+      - PAYMENT.CAPTURE.COMPLETED
+      - INVOICING.INVOICE.PAID
+      - INVOICING.INVOICE.CANCELLED
+      - CUSTOMER.DISPUTE.CREATED
+      - BILLING.SUBSCRIPTION.CANCELLED

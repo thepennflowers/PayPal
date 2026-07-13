@@ -1,0 +1,24 @@
+# Declarative subscription plans, linked to products.yaml by product_id.
+# Applied with: npm run paypal:apply
+plans:
+  - id: PLAN-WEEKLY-SEASONAL
+    product_id: PROD-SEASONAL-MIX
+    name: Weekly Seasonal Bouquet
+    description: A fresh seasonal bouquet delivered every week.
+    billing_cycle:
+      interval_unit: WEEK
+      interval_count: 1
+    price:
+      currency_code: USD
+      value: "40.00"
+
+  - id: PLAN-MONTHLY-SIGNATURE
+    product_id: PROD-SIGNATURE-ROSE
+    name: Monthly Signature Roses
+    description: Our signature rose bouquet, once a month.
+    billing_cycle:
+      interval_unit: MONTH
+      interval_count: 1
+    price:
+      currency_code: USD
+      value: "60.00"

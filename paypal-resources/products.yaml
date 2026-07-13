@@ -1,0 +1,42 @@
+# Declarative catalog for The Penn Flowers.
+# Applied to a real PayPal account with: npm run paypal:apply
+# (dry-run first with: npm run paypal:plan)
+#
+# Keep `id` stable once created — it's used to match existing PayPal
+# catalog products on re-apply (idempotent upsert by name if id is new).
+products:
+  - id: PROD-SIGNATURE-ROSE
+    name: Signature Rose Bouquet
+    description: A dozen long-stem roses, hand-tied with eucalyptus.
+    type: PHYSICAL
+    category: bouquet
+    price:
+      currency_code: USD
+      value: "68.00"
+
+  - id: PROD-SEASONAL-MIX
+    name: Seasonal Wildflower Mix
+    description: Whatever's freshest this week from our local growers.
+    type: PHYSICAL
+    category: bouquet
+    price:
+      currency_code: USD
+      value: "45.00"
+
+  - id: PROD-PEONY-BLUSH
+    name: Blush Peony Arrangement
+    description: Soft pink peonies with ranunculus and spray roses.
+    type: PHYSICAL
+    category: bouquet
+    price:
+      currency_code: USD
+      value: "82.00"
+
+  - id: PROD-SYMPATHY
+    name: Sympathy & Remembrance Arrangement
+    description: White lilies, hydrangea, and soft greenery.
+    type: PHYSICAL
+    category: sympathy
+    price:
+      currency_code: USD
+      value: "95.00"
