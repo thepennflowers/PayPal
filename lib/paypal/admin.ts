@@ -22,6 +22,7 @@ async function getAccessToken(): Promise<string> {
   }
 
   const res = await fetch(`${BASE_URL}/v1/oauth2/token`, {
+    cache: "no-store",
     method: "POST",
     headers: {
       Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,

@@ -27,40 +27,62 @@ const BASE_URL =
     : "https://api-m.sandbox.paypal.com";
 
 let cachedToken: { value: string; expiresAt: number } | null = null;
+// Dedupes concurrent callers onto a single in-flight request — without this,
+// two requests racing while cachedToken is null (e.g. React Strict Mode's
+// double-invoke of Server Components in dev) each mint their own token, and
+// PayPal's sandbox OAuth cache can 401 a resource call made on the
+// not-yet-propagated one with "Access Token not found in cache".
+let pendingToken: Promise<string> | null = null;
 
 async function getAccessToken(): Promise<string> {
   if (cachedToken && cachedToken.expiresAt > Date.now()) {
     return cachedToken.value;
   }
-
-  const clientId = process.env.PAYPAL_CLIENT_ID;
-  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
-  if (!clientId || !clientSecret) {
-    throw new Error(
-      "PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET are required when USE_MOCK_DATA=false"
-    );
+  if (pendingToken) {
+    return pendingToken;
   }
 
-  const res = await fetch(`${BASE_URL}/v1/oauth2/token`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: "grant_type=client_credentials",
-  });
+  pendingToken = (async () => {
+    const clientId = process.env.PAYPAL_CLIENT_ID;
+    const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+      throw new Error(
+        "PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET are required when USE_MOCK_DATA=false"
+      );
+    }
 
-  if (!res.ok) {
-    throw new Error(`Failed to fetch PayPal access token: ${res.status} ${await res.text()}`);
+    const res = await fetch(`${BASE_URL}/v1/oauth2/token`, {
+      // Next.js's Data Cache caches fetch() by default (persisted to
+      // .next/cache across dev restarts) unless told not to — without this,
+      // the app replays a stale access_token from disk forever instead of
+      // getting a fresh one, and PayPal 401s it as unrecognized.
+      cache: "no-store",
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "grant_type=client_credentials",
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch PayPal access token: ${res.status} ${await res.text()}`);
+    }
+
+    const data = await res.json();
+    cachedToken = {
+      value: data.access_token,
+      // refresh a little early
+      expiresAt: Date.now() + (data.expires_in - 60) * 1000,
+    };
+    return cachedToken.value;
+  })();
+
+  try {
+    return await pendingToken;
+  } finally {
+    pendingToken = null;
   }
-
-  const data = await res.json();
-  cachedToken = {
-    value: data.access_token,
-    // refresh a little early
-    expiresAt: Date.now() + (data.expires_in - 60) * 1000,
-  };
-  return cachedToken.value;
 }
 
 async function paypalFetch(path: string, init: RequestInit = {}) {
