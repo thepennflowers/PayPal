@@ -51,6 +51,7 @@ async function getAccessToken(): Promise<string> {
       );
     }
 
+    console.log("[paypal] fetching new access token from", `${BASE_URL}/v1/oauth2/token`);
     const res = await fetch(`${BASE_URL}/v1/oauth2/token`, {
       // Next.js's Data Cache caches fetch() by default (persisted to
       // .next/cache across dev restarts) unless told not to — without this,
@@ -66,10 +67,13 @@ async function getAccessToken(): Promise<string> {
     });
 
     if (!res.ok) {
-      throw new Error(`Failed to fetch PayPal access token: ${res.status} ${await res.text()}`);
+      const body = await res.text();
+      console.error("[paypal] token fetch failed:", res.status, body);
+      throw new Error(`Failed to fetch PayPal access token: ${res.status} ${body}`);
     }
 
     const data = await res.json();
+    console.log("[paypal] token fetched ok, expires_in:", data.expires_in);
     cachedToken = {
       value: data.access_token,
       // refresh a little early
@@ -86,6 +90,7 @@ async function getAccessToken(): Promise<string> {
 }
 
 async function paypalFetch(path: string, init: RequestInit = {}) {
+  console.log("[paypal] fetch:", init.method ?? "GET", path);
   const token = await getAccessToken();
   const res = await fetch(`${BASE_URL}${path}`, {
     // Next.js caches GET fetches in server components by default — never
@@ -100,9 +105,12 @@ async function paypalFetch(path: string, init: RequestInit = {}) {
   });
 
   if (!res.ok) {
-    throw new Error(`PayPal API error on ${path}: ${res.status} ${await res.text()}`);
+    const body = await res.text();
+    console.error("[paypal] fetch failed:", init.method ?? "GET", path, res.status, body);
+    throw new Error(`PayPal API error on ${path}: ${res.status} ${body}`);
   }
 
+  console.log("[paypal] fetch ok:", init.method ?? "GET", path, res.status);
   if (res.status === 204) return null;
   return res.json();
 }

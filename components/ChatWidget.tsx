@@ -197,6 +197,7 @@ export function ChatWidget() {
     setChat(nextChat);
     setMessage("");
     setLoading(true);
+    console.log("[chat-widget] sending", nextChat.length, "messages");
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -208,10 +209,12 @@ export function ChatWidget() {
           })),
         }),
       });
+      console.log("[chat-widget] response status:", res.status, "content-type:", res.headers.get("content-type"));
 
       // Non-streamed responses (errors, missing API key) come back as JSON.
       if (res.headers.get("content-type")?.includes("application/json")) {
         const data = await res.json();
+        console.log("[chat-widget] json response:", data);
         setChat((prev) => [
           ...prev,
           {
@@ -264,17 +267,20 @@ export function ChatWidget() {
         }
       }
       const finalText = (sep === -1 ? buffer : buffer.slice(0, sep)).trim();
+      console.log("[chat-widget] stream done, finalText length:", finalText.length, "order:", order);
       upsertReply(
         finalText ||
           (order ? "Here's your order — pay below when ready. 🌸" : "Sorry, I didn't catch that — could you rephrase?"),
         order
       );
-    } catch {
+    } catch (error) {
+      console.error("[chat-widget] request failed:", error);
       setChat((prev) => [
         ...prev,
         { sender: "agent", text: "Sorry, I couldn't reach the server just now." },
       ]);
     } finally {
+      console.log("[chat-widget] done, clearing loading state");
       setLoading(false);
       chatInputRef.current?.focus();
     }
