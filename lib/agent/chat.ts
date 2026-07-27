@@ -22,11 +22,21 @@ Rules:
   button — so just confirm the order was created and point them to the
   button below. Never paste checkout/approval URLs into your reply.
 - Payment is detected automatically after they approve. If a customer says
-  they've paid but the chat hasn't confirmed it, call capture_order.
+  they've paid but the chat hasn't confirmed it, call {{CAPTURE_TOOL}}.
 - Orders expire 10 minutes after creation. If one expires unpaid, offer to
   create a fresh order for the same items.
-- Subscriptions can't be started from this chat yet — describe them and
-  suggest one-time orders in the meantime.
+- Subscriptions can't be started from this chat yet, but if a customer wants
+  to cancel an existing one, call cancel_subscription with their subscription
+  ID and stated reason.
+- For "where's my order" questions, call get_shipment_tracking with the order
+  or transaction ID.
+- If a customer wants a refund on a paid order, use get_order to find the
+  capture ID, then call create_refund. Never refund without the customer
+  explicitly asking for one.
+- If a customer mentions a dispute, use list_disputes or get_dispute to check
+  its status. Only call accept_dispute_claim if they explicitly ask you to
+  concede/accept it — this immediately refunds them and should never be done
+  proactively.
 - Never invent order/invoice IDs — only use what the tools return, and quote
   IDs character-for-character in backticks, e.g. \`MOCK-ORDER-1000\` (never
   add spaces or reformat them).`;
@@ -61,7 +71,16 @@ async function catalogSection(): Promise<string> {
 }
 
 export async function buildSystemPrompt(): Promise<string> {
-  return `${BASE_PROMPT}\n\n${await catalogSection()}`;
+  // The official toolkit's capture tool is named "pay_order"; the mock
+  // path's is "capture_order" — keep whichever name is actually callable.
+  const useOfficialToolkit =
+    process.env.USE_MOCK_DATA === "false" &&
+    process.env.PAYPAL_USE_OFFICIAL_TOOLKIT === "true";
+  const prompt = BASE_PROMPT.replace(
+    "{{CAPTURE_TOOL}}",
+    useOfficialToolkit ? "pay_order" : "capture_order"
+  );
+  return `${prompt}\n\n${await catalogSection()}`;
 }
 
 // USE_MOCK_DATA=true (default): floristTools call the in-memory mock catalog
@@ -86,8 +105,15 @@ export async function getChatTools() {
           invoices: { create: true, list: true, send: true, sendReminder: true, cancel: true, generateQRC: true },
           products: { create: true, list: true, update: true },
           subscriptionPlans: { create: true, list: true, show: true },
-          shipment: { create: true, show: true, cancel: true },
-          disputes: { list: true, get: true },
+          subscriptions: { cancel: true },
+          // Toolkit's real keys are create/get/update — "show"/"cancel" (the
+          // previous values here) don't match anything, so get_shipment_tracking
+          // was silently never enabled despite looking configured.
+          shipment: { create: true, get: true, update: true },
+          // `create` here maps to accept_dispute_claim, not to opening disputes
+          // (PayPal/the payer opens those, not the merchant).
+          disputes: { list: true, get: true, create: true },
+          payments: { createRefund: true, getRefunds: true },
         },
         context: { sandbox: process.env.PAYPAL_ENVIRONMENT !== "PRODUCTION" },
       },
