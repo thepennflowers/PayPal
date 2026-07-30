@@ -1,8 +1,15 @@
 # Declarative subscription plans, linked to products.yaml by product_id.
 # Applied with: npm run paypal:apply
+#
+# `paypal_id` works as it does in products.yaml — when present, apply renames
+# the existing plan and re-syncs its price in place instead of creating a
+# second one (PayPal plans can be deactivated but never deleted). A plan's
+# product_id is fixed at creation, so a plan can't be re-pointed at a
+# different product; only its name, description and price are syncable.
 plans:
   - id: PLAN-WEEKLY-SEASONAL
-    product_id: PROD-SEASONAL-MIX
+    paypal_id: P-02X73658M5568571SNJKG63Y
+    product_id: PROD-CORAL-GARDEN
     name: Weekly Seasonal Bouquet
     description: A fresh seasonal bouquet delivered every week.
     billing_cycle:
@@ -10,15 +17,16 @@ plans:
       interval_count: 1
     price:
       currency_code: USD
-      value: "40.00"
+      value: "55.00"
 
-  - id: PLAN-MONTHLY-SIGNATURE
-    product_id: PROD-SIGNATURE-ROSE
-    name: Monthly Signature Roses
-    description: Our signature rose bouquet, once a month.
+  - id: PLAN-MONTHLY-BLUSH
+    paypal_id: P-64R897366N2108507NJKG64I
+    product_id: PROD-BLUSH-ROSE
+    name: Monthly Blush Roses
+    description: Our blush rose bouquet, once a month.
     billing_cycle:
       interval_unit: MONTH
       interval_count: 1
     price:
       currency_code: USD
-      value: "60.00"
+      value: "42.00"

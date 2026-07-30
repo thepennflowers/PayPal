@@ -61,20 +61,36 @@ export async function findProductByName(name: string) {
 }
 
 export async function createOrUpdateProduct(spec: {
+  paypal_id?: string;
   name: string;
   description?: string;
   type: string;
   category?: string;
 }) {
-  const existing = await findProductByName(spec.name);
+  // Prefer matching on the PayPal-assigned id: that's what lets a product be
+  // *renamed* in place. Matching by name can't, by definition — a renamed
+  // product looks like a new one, and the old row would be orphaned forever
+  // since the Catalog Products API has no DELETE.
+  const existing = spec.paypal_id
+    ? await adminFetch(`/v1/catalogs/products/${spec.paypal_id}`)
+    : await findProductByName(spec.name);
+
   if (existing) {
+    const ops = [
+      { op: "replace", path: "/description", value: spec.description ?? "" },
+    ];
+    if (existing.name !== spec.name) {
+      ops.push({ op: "replace", path: "/name", value: spec.name });
+    }
     await adminFetch(`/v1/catalogs/products/${existing.id}`, {
       method: "PATCH",
-      body: JSON.stringify([
-        { op: "replace", path: "/description", value: spec.description ?? "" },
-      ]),
+      body: JSON.stringify(ops),
     });
-    return { id: existing.id, created: false };
+    return {
+      id: existing.id,
+      created: false,
+      renamedFrom: existing.name !== spec.name ? existing.name : undefined,
+    };
   }
   // Send only the fields the Catalog API accepts — no caller-supplied `id`
   // (PayPal reserves the PROD- prefix) and no price (catalog has none).
@@ -97,14 +113,62 @@ export async function findPlanByName(name: string) {
 }
 
 export async function createOrUpdatePlan(spec: {
+  paypal_id?: string;
   product_id: string;
   name: string;
   description?: string;
   billing_cycle: { interval_unit: string; interval_count: number };
   price: { currency_code: string; value: string };
 }) {
-  const existing = await findPlanByName(spec.name);
-  if (existing) return { id: existing.id, created: false };
+  const existing = spec.paypal_id
+    ? await adminFetch(`/v1/billing/plans/${spec.paypal_id}`)
+    : await findPlanByName(spec.name);
+
+  if (existing) {
+    // Name and description are PATCHable; price is not — it has its own
+    // endpoint. A plan's product_id is immutable once created.
+    const ops = [
+      { op: "replace", path: "/description", value: spec.description ?? "" },
+    ];
+    if (existing.name !== spec.name) {
+      ops.push({ op: "replace", path: "/name", value: spec.name });
+    }
+    await adminFetch(`/v1/billing/plans/${existing.id}`, {
+      method: "PATCH",
+      body: JSON.stringify(ops),
+    });
+
+    const cycle = existing.billing_cycles?.find(
+      (c: any) => c.tenure_type === "REGULAR"
+    );
+    const livePrice = cycle?.pricing_scheme?.fixed_price;
+    // PayPal echoes trailing-zero-trimmed values ("42.0"), so compare numerically.
+    const changed =
+      !livePrice ||
+      livePrice.currency_code !== spec.price.currency_code ||
+      Number(livePrice.value) !== Number(spec.price.value);
+
+    if (changed) {
+      await adminFetch(`/v1/billing/plans/${existing.id}/update-pricing-schemes`, {
+        method: "POST",
+        body: JSON.stringify({
+          pricing_schemes: [
+            {
+              billing_cycle_sequence: cycle?.sequence ?? 1,
+              pricing_scheme: { fixed_price: spec.price },
+            },
+          ],
+        }),
+      });
+    }
+
+    return {
+      id: existing.id,
+      created: false,
+      renamedFrom: existing.name !== spec.name ? existing.name : undefined,
+      repriced: changed,
+    };
+  }
 
   const created = await adminFetch("/v1/billing/plans", {
     method: "POST",
@@ -140,10 +204,16 @@ export async function createOrUpdateWebhook(spec: { url: string; event_types: st
   const eventTypes = spec.event_types.map((name) => ({ name }));
 
   if (existing) {
-    await adminFetch(`/v1/notifications/webhooks/${existing.id}`, {
-      method: "PATCH",
-      body: JSON.stringify([{ op: "replace", path: "/event_types", value: eventTypes }]),
-    });
+    try {
+      await adminFetch(`/v1/notifications/webhooks/${existing.id}`, {
+        method: "PATCH",
+        body: JSON.stringify([{ op: "replace", path: "/event_types", value: eventTypes }]),
+      });
+    } catch (err: any) {
+      // PayPal 400s a webhook PATCH that wouldn't change anything. For an
+      // idempotent apply that's the success case, not a failure.
+      if (err?.body?.name !== "WEBHOOK_PATCH_REQUEST_NO_CHANGE") throw err;
+    }
     return { id: existing.id, created: false };
   }
 

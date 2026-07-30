@@ -9,8 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "paypal:plan": "tsx scripts/paypal-apply.ts --plan",
-    "paypal:apply": "tsx scripts/paypal-apply.ts --apply"
+    "paypal:plan": "tsx --env-file=.env scripts/paypal-apply.ts --plan",
+    "paypal:apply": "tsx --env-file=.env scripts/paypal-apply.ts --apply"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.3.22",

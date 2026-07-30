@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { paypal } from "@/lib/paypal";
 import { ProductCard } from "@/components/ProductCard";
 import { ChatWidget } from "@/components/ChatWidget";
@@ -51,15 +52,28 @@ export default async function HomePage() {
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className="rounded-2xl border border-leaf-600/20 bg-white p-4"
+              className="rounded-2xl border border-leaf-600/20 bg-white overflow-hidden flex"
             >
-              <h3 className="font-medium text-bloom-900">{plan.name}</h3>
-              <p className="text-sm text-bloom-900/60 mt-1">
-                {plan.description}
-              </p>
-              <p className="text-leaf-700 font-semibold mt-2">
-                ${plan.price.value} / {plan.billing_cycle.toLowerCase()}
-              </p>
+              {plan.image_url && (
+                <div className="relative w-28 shrink-0 self-stretch">
+                  <Image
+                    src={plan.image_url}
+                    alt={plan.name}
+                    fill
+                    sizes="112px"
+                    className="object-cover"
+                  />
+                </div>
+              )}
+              <div className="p-4 flex flex-col justify-center">
+                <h3 className="font-medium text-bloom-900">{plan.name}</h3>
+                <p className="text-sm text-bloom-900/60 mt-1">
+                  {plan.description}
+                </p>
+                <p className="text-leaf-700 font-semibold mt-2">
+                  ${plan.price.value} / {plan.billing_cycle.toLowerCase()}
+                </p>
+              </div>
             </div>
           ))}
         </div>

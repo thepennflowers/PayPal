@@ -1,15 +1,30 @@
+import Image from "next/image";
 import type { Product } from "@/lib/paypal/types";
 
 const EMOJI: Record<string, string> = {
   bouquet: "💐",
+  preserved: "🧺",
   sympathy: "🕊️",
 };
 
 export function ProductCard({ product }: { product: Product }) {
   return (
     <div className="rounded-2xl border border-bloom-100 bg-white p-4 flex flex-col gap-3 shadow-sm hover:shadow-md transition-shadow">
-      <div className="h-32 rounded-xl bg-gradient-to-br from-bloom-100 to-bloom-50 flex items-center justify-center text-5xl">
-        {EMOJI[product.category ?? "bouquet"] ?? "🌸"}
+      {/* Real store photos live in public/flowers/ — fall back to the
+          category emoji for any product PayPal returns that we have no
+          local photo for. */}
+      <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-gradient-to-br from-bloom-100 to-bloom-50 flex items-center justify-center text-5xl">
+        {product.image_url ? (
+          <Image
+            src={product.image_url}
+            alt={product.name}
+            fill
+            sizes="(min-width: 1024px) 22vw, 45vw"
+            className="object-cover"
+          />
+        ) : (
+          (EMOJI[product.category ?? "bouquet"] ?? "🌸")
+        )}
       </div>
       <div>
         <h3 className="font-medium text-bloom-900">{product.name}</h3>

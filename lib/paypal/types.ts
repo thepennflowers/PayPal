@@ -30,6 +30,7 @@ export type SubscriptionPlan = {
   description?: string;
   status: "ACTIVE" | "INACTIVE";
   billing_cycle: "WEEK" | "MONTH";
+  image_url?: string;
   price: Money;
 };
 

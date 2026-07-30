@@ -172,7 +172,7 @@ const ORDER_SEPARATOR = "\u001e";
 
 const SUGGESTIONS = [
   "Birthday bouquet under $50",
-  "Sympathy flowers for a service",
+  "Something preserved that lasts",
   "Weekly flower subscription",
 ];
 

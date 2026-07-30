@@ -23,10 +23,10 @@ file first.
 The Penn Flowers is a small floristry business. Current catalog (see
 `lib/catalog.ts`, mirrored in `paypal-resources/products.yaml`):
 
-- Signature Rose Bouquet — $68
-- Seasonal Wildflower Mix — $45 (also available as a $40/week subscription)
-- Blush Peony Arrangement — $82
-- Sympathy & Remembrance Arrangement — $95
+- Blush Rose & Baby's Breath — $48 (also a $42/month subscription)
+- Sunshine Sunflower Bouquet — $58
+- Coral Garden Bouquet — $68 (also a $55/week subscription)
+- Preserved Peach Rose Basket — $88 (preserved, not fresh-cut)
 
 Tone for anything customer-facing (chat replies, invoice notes): warm,
 concise, never pushy. Always quote prices in USD. Never invent products,

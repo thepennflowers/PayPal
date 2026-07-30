@@ -148,6 +148,8 @@ function toPlan(raw: any): SubscriptionPlan {
     status: raw.status,
     billing_cycle:
       cycle?.frequency?.interval_unit ?? local?.billing_cycle ?? "MONTH",
+    // PayPal plans have no image field — the photo is ours, matched by name.
+    image_url: local?.image_url,
     price:
       cycle?.pricing_scheme?.fixed_price ??
       local?.price ?? { currency_code: "USD", value: "0.00" },

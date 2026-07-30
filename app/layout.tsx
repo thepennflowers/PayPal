@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,7 +19,13 @@ export default function RootLayout({
         <header className="border-b border-bloom-100 bg-white/80 backdrop-blur sticky top-0 z-10">
           <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-2xl">🌸</span>
+              <Image
+                src="/brand/logo.png"
+                alt="The Penn Flowers"
+                width={32}
+                height={32}
+                className="rounded-full"
+              />
               <span className="font-semibold text-lg text-bloom-900">
                 The Penn Flowers
               </span>

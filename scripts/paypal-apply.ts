@@ -25,8 +25,8 @@ function loadYaml<T>(file: string): T {
   return yaml.load(readFileSync(join(RESOURCES_DIR, file), "utf8")) as T;
 }
 
-type ProductsFile = { products: Array<{ id: string; name: string; description?: string; type: string; category?: string }> };
-type PlansFile = { plans: Array<{ id: string; product_id: string; name: string; description?: string; billing_cycle: { interval_unit: string; interval_count: number }; price: { currency_code: string; value: string } }> };
+type ProductsFile = { products: Array<{ id: string; paypal_id?: string; name: string; description?: string; type: string; category?: string }> };
+type PlansFile = { plans: Array<{ id: string; paypal_id?: string; product_id: string; name: string; description?: string; billing_cycle: { interval_unit: string; interval_count: number }; price: { currency_code: string; value: string } }> };
 type WebhooksFile = { webhooks: Array<{ id: string; url: string; event_types: string[] }> };
 
 async function main() {
@@ -44,25 +44,41 @@ async function main() {
   console.log("Products:");
   for (const p of products) {
     if (mode === "plan") {
-      console.log(`  [plan] upsert product "${p.name}"`);
+      const via = p.paypal_id ? `in place on ${p.paypal_id}` : "by name";
+      console.log(`  [plan] upsert product "${p.name}" (${via})`);
       continue;
     }
     // PayPal's Catalog API only accepts categories from its own enum —
     // all our floristry categories map to FLOWERS.
     const result = await createOrUpdateProduct({ ...p, category: "FLOWERS" });
     productIdMap.set(p.id, result.id);
-    console.log(`  ${result.created ? "created" : "matched"} "${p.name}" -> ${result.id}`);
+    const verb = result.created
+      ? "created"
+      : result.renamedFrom
+        ? `renamed from "${result.renamedFrom}" ->`
+        : "matched";
+    console.log(`  ${verb} "${p.name}" -> ${result.id}`);
   }
 
   console.log("\nSubscription plans:");
   for (const plan of plans) {
     if (mode === "plan") {
-      console.log(`  [plan] upsert plan "${plan.name}" (product: ${plan.product_id})`);
+      const via = plan.paypal_id ? `in place on ${plan.paypal_id}` : "by name";
+      console.log(
+        `  [plan] upsert plan "${plan.name}" @ ${plan.price.value} ${plan.price.currency_code}` +
+          ` (product: ${plan.product_id}, ${via})`
+      );
       continue;
     }
     const liveProductId = productIdMap.get(plan.product_id) ?? plan.product_id;
     const result = await createOrUpdatePlan({ ...plan, product_id: liveProductId });
-    console.log(`  ${result.created ? "created" : "matched"} "${plan.name}" -> ${result.id}`);
+    const verb = result.created
+      ? "created"
+      : result.renamedFrom
+        ? `renamed from "${result.renamedFrom}" ->`
+        : "matched";
+    const priced = !result.created && result.repriced ? " (price updated)" : "";
+    console.log(`  ${verb} "${plan.name}" -> ${result.id}${priced}`);
   }
 
   console.log("\nWebhooks:");

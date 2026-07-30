@@ -2,41 +2,51 @@
 # Applied to a real PayPal account with: npm run paypal:apply
 # (dry-run first with: npm run paypal:plan)
 #
-# Keep `id` stable once created — it's used to match existing PayPal
-# catalog products on re-apply (idempotent upsert by name if id is new).
+# Keep `id` stable once created — it's our own local identifier.
+#
+# `paypal_id` is the ID PayPal assigned when the product was first created.
+# When present, apply matches on it and PATCHes name + description in place,
+# so products can be renamed without orphaning the old ones (PayPal's Catalog
+# Products API has no DELETE). Leave it off for a brand-new product; apply
+# then falls back to matching by name, and creates it if there's no match.
 products:
-  - id: PROD-SIGNATURE-ROSE
-    name: Signature Rose Bouquet
-    description: A dozen long-stem roses, hand-tied with eucalyptus.
+  - id: PROD-BLUSH-ROSE
+    paypal_id: PROD-7MA91846B1132901C
+    name: Blush Rose & Baby's Breath
+    description: Five pale pink roses nestled in a cloud of baby's breath, wrapped in white.
+    type: PHYSICAL
+    category: bouquet
+    price:
+      currency_code: USD
+      value: "48.00"
+
+  - id: PROD-SUNSHINE-SUNFLOWER
+    paypal_id: PROD-8E226700XF5011140
+    name: Sunshine Sunflower Bouquet
+    description: A single bright sunflower with white lisianthus, pink carnations and eucalyptus, in mint wrap.
+    type: PHYSICAL
+    category: bouquet
+    price:
+      currency_code: USD
+      value: "58.00"
+
+  # Linked to the Weekly Seasonal Bouquet plan — keep paypal_id stable.
+  - id: PROD-CORAL-GARDEN
+    paypal_id: PROD-3LC072643V399330A
+    name: Coral Garden Bouquet
+    description: Orange roses with blue hydrangea, chamomile daisies, stock and pink carnations.
     type: PHYSICAL
     category: bouquet
     price:
       currency_code: USD
       value: "68.00"
 
-  - id: PROD-SEASONAL-MIX
-    name: Seasonal Wildflower Mix
-    description: Whatever's freshest this week from our local growers.
+  - id: PROD-PRESERVED-BASKET
+    paypal_id: PROD-6MV61512CJ040114E
+    name: Preserved Peach Rose Basket
+    description: Peach roses and ranunculus arranged in a woven basket — preserved, so it lasts. Gift card included.
     type: PHYSICAL
-    category: bouquet
+    category: preserved
     price:
       currency_code: USD
-      value: "45.00"
-
-  - id: PROD-PEONY-BLUSH
-    name: Blush Peony Arrangement
-    description: Soft pink peonies with ranunculus and spray roses.
-    type: PHYSICAL
-    category: bouquet
-    price:
-      currency_code: USD
-      value: "82.00"
-
-  - id: PROD-SYMPATHY
-    name: Sympathy & Remembrance Arrangement
-    description: White lilies, hydrangea, and soft greenery.
-    type: PHYSICAL
-    category: sympathy
-    price:
-      currency_code: USD
-      value: "95.00"
+      value: "88.00"
