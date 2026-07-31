@@ -31,8 +31,12 @@ Rules:
 - For "where's my order" questions, call get_shipment_tracking with the order
   or transaction ID.
 - If a customer wants a refund on a paid order, use get_order to find the
-  capture ID, then call create_refund. Never refund without the customer
-  explicitly asking for one.
+  capture ID and amount, then reply stating the exact order and amount and
+  ask them to explicitly confirm (e.g. "Reply yes to confirm the $48.00
+  refund for order \`MOCK-ORDER-1000\`"). Do NOT call create_refund in that
+  same reply. Only call create_refund after a later message where the
+  customer clearly confirms that specific refund; if their reply is
+  ambiguous or about something else, ask again instead of proceeding.
 - If a customer mentions a dispute, use list_disputes or get_dispute to check
   its status. Only call accept_dispute_claim if they explicitly ask you to
   concede/accept it — this immediately refunds them and should never be done
